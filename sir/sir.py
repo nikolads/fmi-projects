@@ -15,8 +15,6 @@ class SimResult:
 def simulate(s0, i0, r0, infect_prob, recovery_rate, sim_time, **kwargs):
     precision = kwargs.pop("precision", 1.0)
     sim_step = kwargs.pop("sim_step", 0.01)
-    min_s = kwargs.pop("min_s", 0.01)
-    min_i = kwargs.pop("min_i", 0.01)
 
     steps = int(math.ceil(sim_time / precision))
 
@@ -51,6 +49,12 @@ def simulate(s0, i0, r0, infect_prob, recovery_rate, sim_time, **kwargs):
         curr_i = prev_i + (s_to_i(prev_s, prev_i) - i_to_r(prev_i)) * sim_step
         curr_r = prev_r + i_to_r(prev_i) * sim_step
 
+        if curr_s < 0:
+            curr_s = 0.0
+
+        if curr_i < 0:
+            curr_i = 0.0
+
         dtime += sim_step
         if (dtime > precision):
             S[i] = curr_s;
@@ -60,22 +64,9 @@ def simulate(s0, i0, r0, infect_prob, recovery_rate, sim_time, **kwargs):
             dtime -= precision;
             i += 1
 
-        if curr_s < min_s:
-            break
-
-        if curr_i < min_i and curr_i < prev_i:
-            break
-
         prev_s = curr_s
         prev_i = curr_i
         prev_r = curr_r
-
-    # if the simulation was interupted, fill the rest of the arrays with duplicate data
-    while i < steps:
-        S[i] = S[i-1]
-        I[i] = I[i-1]
-        R[i] = R[i-1]
-        i += 1
 
     return SimResult(S, I, R, T, i)
 
