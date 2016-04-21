@@ -204,6 +204,11 @@
 		return [];
 	};
 
+	Graph.prototype.getNodeDegree = function(node) {
+		var adj = this.adjacency[node.id];
+		return (adj !== undefined) ? Object.keys(adj).length : 0;
+	}
+
 	// remove a node and it's associated edges from the graph
 	Graph.prototype.removeNode = function(node) {
 		if (node.id in this.nodeSet) {
