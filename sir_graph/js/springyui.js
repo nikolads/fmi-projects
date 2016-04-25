@@ -208,7 +208,8 @@ jQuery.fn.springy = function(params) {
 
 			ctx.save();
 
-			var radius = 10;// + graph.getNodeDegree(node);
+			//var radius = 10;// + graph.getNodeDegree(node);
+			var radius = 2 + 2*Math.log(graph.getNodeDegree(node));
 			var fill_color = (node.data.color !== undefined) ? node.data.color : "#000000";
 
 			ctx.beginPath();
