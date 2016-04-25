@@ -58,7 +58,7 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size) {
   that.final_size = final_size;
 
   /** @param n Source Node */
-  that.addPreferentialEdge = function (n, n_id) {
+  that.addPreferentialEdge = function (n) {
     var G = that.graph;
     var target = Math.random();
     var probability = 0;
@@ -69,12 +69,12 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size) {
       probability += G.getNodeDegree(G.nodes[i]) / edges_sum;
 
       if (target <= probability) {
-        if (G.nodes[n_id].data.color == undefined)
-          G.nodes[n_id].data.color = colorMutate(G.nodes[i].data.color, 0.5);
+        if (n.data.color == undefined)
+          n.data.color = colorMutate(G.nodes[i].data.color, 0.5);
 
         G.addEdges(
-          [that.prefix + n_id, that.prefix + i],
-          [that.prefix + i, that.prefix + n_id]
+          [n.id, that.prefix + i],
+          [that.prefix + i, n.id]
         );
         return;
       }
@@ -115,7 +115,7 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size) {
 
     // add m number of edges
     for (var m = 0; m < that.m; m++)
-        that.addPreferentialEdge(node, node_size); // node_size is current id
+        that.addPreferentialEdge(node); // node_size is current id
   }, 5);
 
 
