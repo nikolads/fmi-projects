@@ -60,30 +60,24 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size) {
   /** @param n Source Node */
   that.addPreferentialEdge = function (n) {
     var G = that.graph;
-    var target = Math.random();
-    var probability = 0;
     var edges_sum = G.edges.length;
+    var target = Math.floor(Math.random() * edges_sum);
 
-    for (var i = 0; i < G.nodes.length; i++) {
+    var target_node = G.edges[target].source;
 
-      probability += G.getNodeDegree(G.nodes[i]) / edges_sum;
-
-      if (target <= probability) {
-        if (n.data.color == undefined)
-          n.data.color = colorMutate(G.nodes[i].data.color, 0.5);
-
-        G.addEdges(
-          [n.id, that.prefix + i],
-          [that.prefix + i, n.id]
-        );
-        return;
-      }
+    if (n.data.color == undefined) {
+      n.data.color = colorMutate(target_node.data.color, 0.5);
     }
+
+    G.addEdges(
+      [n.id, target_node.id],
+      [target_node.id, n.id]
+    );
   }
 
   // initialize graph
-  if (that.m0 > that.fina_size)
-    that.m0 = that.fina_size;
+  if (that.m0 > that.final_size)
+    that.m0 = that.final_size;
 
   for (var i = 0; i < that.m0; i++) {
     var node = new Springy.Node(that.prefix + i, {

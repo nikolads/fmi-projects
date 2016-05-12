@@ -1,5 +1,5 @@
 var graph = new Springy.Graph();
-GraphBuilder.BarabasiAlbert(graph, 1, 1, 250);
+GraphBuilder.BarabasiAlbert(graph, 1, 1, 500);
 //GraphBuilder.RandomGraph(graph, 250, 230);
 
 jQuery(function(){
