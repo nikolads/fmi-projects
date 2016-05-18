@@ -1,3 +1,13 @@
 #sir_graph {
-  
+
+}
+
+body {
+  position: relative;
+}
+
+#sir_graphic {
+  position: absolute;
+  top: 10px;
+  //background-color: rgba(0, 0, 0, 0.5);
 }

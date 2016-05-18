@@ -1,13 +1,16 @@
 var graph = new Springy.Graph();
-GraphBuilder.BarabasiAlbert(graph, 1, 1, 500);
-//GraphBuilder.RandomGraph(graph, 250, 230);
+GraphBuilder.BarabasiAlbert(graph, 3, 1, 200);
 
 jQuery(function(){
+
+   document.getElementById("sir_graph").width = window.innerWidth;
+   document.getElementById("sir_graph").height = window.innerHeight;
+
   var springy = jQuery('#sir_graph').springy({
     graph: graph,
-    stiffness: 100,
-    repulsion: 100,
-    minEnergyThreshold: 0.01,
+    stiffness: 10,
+    repulsion: 10,
+    minEnergyThreshold: 0.001,
     //damping: 0.6
   });
 

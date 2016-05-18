@@ -49,7 +49,7 @@ var GraphBuilder = {
 * @param final_size The number of nodes in generated networks
 */
 GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size) {
-  var that = self;
+  var that = this;
   that.prefix = "ba__";
 
   that.graph = graph;
@@ -89,8 +89,9 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size) {
   }
 
   for (var i = 0; i < that.m0; i++) {
-    for (var j = 0; j < that.m0; j++)
+    for (var j = 0; j < that.m0; j++) {
       that.graph.addEdges([that.prefix + i, that.prefix + j]);
+    }
   }
 
   var nodeInterval = setInterval(function() {
@@ -98,20 +99,19 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size) {
 
     if (node_size > that.final_size) {
       clearInterval(nodeInterval);
+      document.body.dispatchEvent(new Event('barabasi_finished'));
       return;
     }
 
     var node = new Springy.Node(
                 that.prefix + node_size, {label: that.prefix + node_size}
               );
-
     that.graph.addNode(node);
 
     // add m number of edges
     for (var m = 0; m < that.m; m++)
         that.addPreferentialEdge(node); // node_size is current id
   }, 5);
-
 
   return that;
 };
