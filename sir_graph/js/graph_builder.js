@@ -19,12 +19,17 @@ function colorCrossOver(cA, cB) {
 }
 
 var GraphBuilder = {
-  RandomGraph: function(graph, nodes, edges) {
+  RandomGraph: function(graph, nodes, edges, new_node_callback) {
     var that = self;
     that.prefix = 'rand_';
 
     for (var i = 0; i < nodes; i++) {
-      graph.addNodes(that.prefix + i);
+      var node = new Springy.Node(that.prefix + i, {label: that.prefix + i});
+      if (new_node_callback !== undefined) {
+        new_node_callback(node);
+      }
+
+      that.graph.addNode(node);
     }
 
     for (var i=0; i < edges; i++) {
@@ -38,6 +43,7 @@ var GraphBuilder = {
         [that.prefix + randT, that.prefix + randS]
       );
     }
+    jQuery(document).trigger('random_finished');
   }
 
 };
@@ -103,7 +109,7 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size, new_node_callb
 
     if (node_size > that.final_size) {
       clearInterval(nodeInterval);
-      document.body.dispatchEvent(new Event('barabasi_finished'));
+      jQuery(document).trigger('barabasi_finished');
       return;
     }
 
@@ -111,7 +117,7 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size, new_node_callb
     if (new_node_callback !== undefined) {
       new_node_callback(node);
     }
-    
+
     that.graph.addNode(node);
 
     // add m number of edges

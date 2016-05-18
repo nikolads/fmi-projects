@@ -6,6 +6,7 @@ function Sir(graph, infection_prob, recovery_rate) {
         if (intervalId !== undefined) {
             return;
         }
+        calc_distribution();
         intervalId = setInterval(simulation_step, interval);
     };
 
@@ -16,10 +17,6 @@ function Sir(graph, infection_prob, recovery_rate) {
         clearInterval(intervalId);
         intervalId = undefined;
     };
-
-    calc_distribution();
-
-    return this;
 
     function simulation_step() {
         graph.edges.forEach(function(edge) {
@@ -46,10 +43,13 @@ function Sir(graph, infection_prob, recovery_rate) {
                 }
             }
         });
-
-        console.log(that.susceptible, that.infected, that.recoved);
-
+        jQuery(document).trigger("sir_simulation_tick", [that.susceptible, that.infected, that.recoved]);
+        //console.log(that.susceptible, that.infected, that.recoved);
         graph.notify();
+
+        if (that.infected <= 0) {
+            clearInterval(intervalId);
+        }
     }
 
     function calc_distribution() {
@@ -73,4 +73,6 @@ function Sir(graph, infection_prob, recovery_rate) {
             }
         });
     };
+
+    return this;
 }
