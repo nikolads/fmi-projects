@@ -48,7 +48,7 @@ var GraphBuilder = {
 * @param m The number of edges to add at each time step.
 * @param final_size The number of nodes in generated networks
 */
-GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size) {
+GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size, new_node_callback) {
   var that = this;
   that.prefix = "ba__";
 
@@ -85,6 +85,10 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size) {
       color: '#' + Math.floor(Math.random()*16777215).toString(16),
       }
     );
+
+    if (new_node_callback !== undefined) {
+      new_node_callback(node);
+    }
     that.graph.addNode(node);
   }
 
@@ -103,9 +107,11 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size) {
       return;
     }
 
-    var node = new Springy.Node(
-                that.prefix + node_size, {label: that.prefix + node_size}
-              );
+    var node = new Springy.Node(that.prefix + node_size, {label: that.prefix + node_size});
+    if (new_node_callback !== undefined) {
+      new_node_callback(node);
+    }
+    
     that.graph.addNode(node);
 
     // add m number of edges
