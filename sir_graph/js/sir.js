@@ -6,6 +6,7 @@ function Sir(graph, infection_prob, recovery_rate) {
         if (intervalId !== undefined) {
             return;
         }
+        calc_distribution();
         intervalId = setInterval(simulation_step, interval);
     };
 
@@ -16,10 +17,6 @@ function Sir(graph, infection_prob, recovery_rate) {
         clearInterval(intervalId);
         intervalId = undefined;
     };
-
-    calc_distribution();
-
-    return this;
 
     function simulation_step() {
         graph.edges.forEach(function(edge) {
@@ -53,8 +50,6 @@ function Sir(graph, infection_prob, recovery_rate) {
     }
 
     function calc_distribution() {
-        console.log(this);
-
         that.susceptible = 0;
         that.infected = 0;
         that.recoved = 0;
@@ -73,4 +68,6 @@ function Sir(graph, infection_prob, recovery_rate) {
             }
         });
     };
+
+    return this;
 }

@@ -37,6 +37,12 @@ var GraphBuilder = {
         [that.prefix + randS, that.prefix + randT],
         [that.prefix + randT, that.prefix + randS]
       );
+
+      var node = graph.nodeSet[that.prefix + randS];
+      node.data.mass = 2 + 2*Math.log(graph.getNodeDegree(node));
+
+      node = graph.nodeSet[that.prefix + randT];
+      node.data.mass = 2 + 2*Math.log(graph.getNodeDegree(node));
     }
   }
 
@@ -73,6 +79,9 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size, new_node_callb
       [n.id, target_node.id],
       [target_node.id, n.id]
     );
+
+    n.data.mass = 2 + 2*Math.log(graph.getNodeDegree(n));
+    target_node.data.mass = 2 + 2*Math.log(graph.getNodeDegree(target_node));
   }
 
   // initialize graph
@@ -95,8 +104,16 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size, new_node_callb
   for (var i = 0; i < that.m0; i++) {
     for (var j = 0; j < that.m0; j++) {
       that.graph.addEdges([that.prefix + i, that.prefix + j]);
+
+      var node = graph.nodeSet[that.prefix + i];
+      node.data.mass = 2 + 2*Math.log(graph.getNodeDegree(node));
+
+      node = graph.nodeSet[that.prefix + j];
+      node.data.mass = 2 + 2*Math.log(graph.getNodeDegree(node));
     }
   }
+
+
 
   var nodeInterval = setInterval(function() {
     node_size = that.graph.nodes.length;
@@ -111,7 +128,7 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size, new_node_callb
     if (new_node_callback !== undefined) {
       new_node_callback(node);
     }
-    
+
     that.graph.addNode(node);
 
     // add m number of edges
