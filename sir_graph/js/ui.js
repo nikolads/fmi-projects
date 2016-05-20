@@ -3,10 +3,16 @@ var SirGUIWrap = function(gui) {
   this.infection_rate = 0.5;
   this.start = false;
 
+  this.notify = function() {
+    rec_rate_controller.updateDisplay();
+    inf_rate_controller.updateDisplay();
+    start_controller.updateDisplay();
+  }
+
   var f1 = gui.addFolder('SIR Model');
-  f1.add(this, 'recovery_rate', 0, 5);
-  f1.add(this, 'infection_rate', 0, 5);
-  f1.add(this, 'start');
+  var rec_rate_controller = f1.add(this, 'recovery_rate', 0, 5);
+  var inf_rate_controller = f1.add(this, 'infection_rate', 0, 5);
+  var start_controller = f1.add(this, 'start');
 };
 
 var GraphGUIWrap = function(gui) {
@@ -33,10 +39,7 @@ var GraphGUIWrap = function(gui) {
 
     console.log(this.graph, init_m, step_m, max_nodes);
 
-    GraphBuilder.BarabasiAlbert(that.graph, init_m, step_m, max_nodes, function(node) {
-      node.data.state = "susceptible";
-      node.data.color = "#0000ff";
-    });
+    GraphBuilder.BarabasiAlbert(that.graph, init_m, step_m, max_nodes, makeSusceptible);
 
     jQuery('#sir_graph').springy({
       graph: that.graph,
@@ -45,6 +48,12 @@ var GraphGUIWrap = function(gui) {
       minEnergyThreshold: that.minEnergyThreshold,
       //damping: 0.6
     });
+  }
+
+  this.notify = function() {
+    init_m_controller.updateDisplay();
+    step_m_controller.updateDisplay();
+    nodes_controller.updateDisplay();
   }
 
   var f2 = gui.addFolder('Graph Settings');

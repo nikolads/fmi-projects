@@ -63,25 +63,39 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size, new_node_callb
   that.m = m;
   that.final_size = final_size;
 
-  /** @param n Source Node */
-  that.addPreferentialEdge = function (n) {
+  /**
+  * @param n Source Node
+  * @param count Number of edges to add
+  */
+  that.addPreferentialEdge = function(n, count) {
     var G = that.graph;
     var edges_sum = G.edges.length;
-    var target = Math.floor(Math.random() * edges_sum);
+    var addedEdges = {};
 
-    var target_node = G.edges[target].source;
+    for (i = 0; i < count; ) {
+      var target = Math.floor(Math.random() * edges_sum);
+      var target_node = G.edges[target].source;
 
-    if (n.data.color == undefined) {
-      n.data.color = colorMutate(target_node.data.color, 0.5);
+      // make sure we are not adding a duplicate edge
+      if (addedEdges[target_node.id] !== undefined) {
+        continue;
+      }
+
+      if (n.data.color == undefined) {
+        n.data.color = colorMutate(target_node.data.color, 0.5);
+      }
+
+      G.addEdges(
+        [n.id, target_node.id],
+        [target_node.id, n.id]
+      );
+
+      n.data.mass = 2 + 2*Math.log(graph.getNodeDegree(n));
+      target_node.data.mass = 2 + 2*Math.log(graph.getNodeDegree(target_node));
+
+      addedEdges[target_node.id] = 1;
+      i++;
     }
-
-    G.addEdges(
-      [n.id, target_node.id],
-      [target_node.id, n.id]
-    );
-
-    n.data.mass = 2 + 2*Math.log(graph.getNodeDegree(n));
-    target_node.data.mass = 2 + 2*Math.log(graph.getNodeDegree(target_node));
   }
 
   // initialize graph
@@ -120,7 +134,7 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size, new_node_callb
 
     if (node_size > that.final_size) {
       clearInterval(nodeInterval);
-      document.body.dispatchEvent(new Event('barabasi_finished'));
+      document.dispatchEvent(new Event('barabasi_finished'));
       return;
     }
 
@@ -132,8 +146,7 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size, new_node_callb
     that.graph.addNode(node);
 
     // add m number of edges
-    for (var m = 0; m < that.m; m++)
-        that.addPreferentialEdge(node); // node_size is current id
+    that.addPreferentialEdge(node, that.m); // node_size is current id
   }, 5);
 
   return that;
