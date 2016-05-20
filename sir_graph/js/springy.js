@@ -330,6 +330,17 @@
 		});
 	};
 
+	Graph.prototype.clear = function() {
+		this.nodeSet = {};
+		this.nodes = [];
+		this.edges = [];
+		this.adjacency = {};
+
+		this.nextNodeId = 0;
+		this.nextEdgeId = 0;
+		//this.eventListeners = [];
+	};
+
 	// -----------
 	var Layout = Springy.Layout = {};
 	Layout.ForceDirected = function(graph, stiffness, repulsion, damping, minEnergyThreshold) {
@@ -342,6 +353,12 @@
 		this.nodePoints = {}; // keep track of points associated with nodes
 		this.edgeSprings = {}; // keep track of springs associated with edges
 	};
+
+	Layout.ForceDirected.prototype.clear = function() {
+		this.stop();
+		this.nodePoints = {};
+		this.edgeSprings = {};
+	}
 
 	Layout.ForceDirected.prototype.point = function(node) {
 		if (!(node.id in this.nodePoints)) {

@@ -19,12 +19,17 @@ function colorCrossOver(cA, cB) {
 }
 
 var GraphBuilder = {
-  RandomGraph: function(graph, nodes, edges) {
+  RandomGraph: function(graph, nodes, edges, new_node_callback) {
     var that = self;
     that.prefix = 'rand_';
 
     for (var i = 0; i < nodes; i++) {
-      graph.addNodes(that.prefix + i);
+      var node = new Springy.Node(that.prefix + i, {label: that.prefix + i});
+      if (new_node_callback !== undefined) {
+        new_node_callback(node);
+      }
+
+      that.graph.addNode(node);
     }
 
     for (var i=0; i < edges; i++) {
@@ -44,6 +49,7 @@ var GraphBuilder = {
       node = graph.nodeSet[that.prefix + randT];
       node.data.mass = 2 + 2*Math.log(graph.getNodeDegree(node));
     }
+    jQuery(document).trigger('random_finished');
   }
 
 };
@@ -134,7 +140,7 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size, new_node_callb
 
     if (node_size > that.final_size) {
       clearInterval(nodeInterval);
-      document.dispatchEvent(new Event('barabasi_finished'));
+      jQuery(document).trigger('barabasi_finished');
       return;
     }
 
@@ -150,4 +156,34 @@ GraphBuilder.BarabasiAlbert = function (graph, m0, m, final_size, new_node_callb
   }, 5);
 
   return that;
+};
+
+GraphBuilder.Tree = function(graph, tree_graph, root) {
+  var that = this;
+  that.prefix = "tree__";
+
+  tree_graph.addNodes.apply(tree_graph, Object.keys(graph.adjacency));
+
+  var visited = new Set();
+  var Q = [];
+  visited.add(root);
+  Q.push(root);
+  tree_graph.nodeSet[root].data.distance = 0;
+
+  while (Q.length > 0) {
+    var current = Q.shift();
+    tree_graph.nodeSet[current].data.color = graph.nodeSet[current].data.color
+    tree_graph.nodeSet[current].data.state = graph.nodeSet[current].data.state
+
+    for ( key in graph.adjacency[current]) {
+      if (visited.has(key) == false) {
+        Q.push(key)
+        visited.add(key);
+        tree_graph.nodeSet[key].data.distance = tree_graph.nodeSet[current].data.distance + 1;
+        tree_graph.addEdges([current, key]);
+      }
+    }
+  }
+  tree_graph.nodeSet[root].data.color = "#F44336";
+  return this;
 };

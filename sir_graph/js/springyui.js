@@ -102,6 +102,7 @@ jQuery.fn.springy = function(params) {
 		var p = fromScreen({x: e.pageX - pos.left, y: e.pageY - pos.top});
 		selected = layout.nearest(p);
 		node = selected.node;
+		if (graph.onNodeClick) graph.onNodeClick(e, node);
 		if (node && node.data && node.data.ondoubleclick) {
 			node.data.ondoubleclick();
 		}
@@ -187,7 +188,7 @@ jQuery.fn.springy = function(params) {
 		function drawEdge(edge, p1, p2) {
 			// Graph is undirected so each edge exists twice.
 			// This check makes sure we don't draw the same edge twice.
-			if (edge.source.id >= edge.target.id) {
+			if (this.layout.graph.undirected && edge.source.id >= edge.target.id) {
 				return;
 			}
 
@@ -210,6 +211,7 @@ jQuery.fn.springy = function(params) {
 
 			//var radius = 10;// + graph.getNodeDegree(node);
 			var radius = 2 + 2*Math.log(graph.getNodeDegree(node));
+			radius = (radius > 1) ? radius : 2;
 			var fill_color = (node.data.color !== undefined) ? node.data.color : "#000000";
 
 			ctx.beginPath();
