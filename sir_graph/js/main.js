@@ -70,9 +70,9 @@ jQuery(function() {
 
   var springy_tree = jQuery('#sir_graph_tree').springy({
     graph: sir.tree,
-    stiffness: 200,
-    repulsion: 200,
-    minEnergyThreshold: 0.1,
+    stiffness: 1000,
+    repulsion: 1000,
+    minEnergyThreshold: 0.001,
     damping: 0.5
   });
 

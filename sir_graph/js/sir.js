@@ -39,7 +39,7 @@ function Sir(graph, infection_prob, recovery_rate, sir_tree) {
             var node1 = edge.source;
             var node2 = edge.target;
 
-            if (node1.data.old_state == "I" && node2.data.state == "S" && Math.random() < infection_prob) {
+            if (node1.data.old_state == "I" && node2.data.state == "S" && Math.random() < that.infection_prob) {
                 makeInfected(node2);
                 that.susceptible--;
                 that.infected++;
@@ -53,9 +53,9 @@ function Sir(graph, infection_prob, recovery_rate, sir_tree) {
 
         graph.nodes.forEach(function(node) {
             if (node.data.old_state == "I") {
-                node.data.recovery += recovery_rate;
-                // if (Math.random() < recovery_rate) {
-                if (node.data.recovery > 1.0) {
+                // node.data.recovery += recovery_rate;
+                if (Math.random() < that.recovery_rate) {
+                    // if (node.data.recovery > 1.0) {
                     makeRemoved(node);
                     that.infected--;
                     that.recoved++;
@@ -83,7 +83,7 @@ function Sir(graph, infection_prob, recovery_rate, sir_tree) {
         that.infected = 0;
         that.recoved = 0;
 
-        graph.nodes.forEach(function (node) {
+        graph.nodes.forEach(function(node) {
             node.data.infected_from = null;
             switch (node.data.state) {
                 case "S":
