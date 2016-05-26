@@ -15,7 +15,7 @@ class FitSir:
         J = 0
         for i in range(0, len(self.data)):
             J += (self.data[i] - y[i])**2
-        return 0.5*J
+        return J
 
     def cost(self, beta):
         self.sir.infect_prob = beta
@@ -23,11 +23,21 @@ class FitSir:
         return self.error(sir_results.I)
 
     def cost_derivative(self, beta):
-        return (self.cost(beta + 0.00001) - self.cost(beta)) / 0.00001
+        return (self.cost(beta + 0.000001) - self.cost(beta)) / 0.000001
 
     def fit(self, beta, step):
-        old_beta = 10
-        while abs(beta - old_beta) > self.precision:
-            old_beta = beta
-            beta = old_beta - step * self.cost_derivative(old_beta)
+        curr_step = 0
+
+        while True:
+            curr_cost = self.cost_derivative(beta)
+            beta = beta - step * curr_cost
+
+            curr_step = curr_step + 1
+            if curr_step == 1000:
+                print("Simulating... beta={}".format(beta));
+                curr_step = 0
+
+            if abs(curr_cost) < self.precision:
+                break
+
         return beta
