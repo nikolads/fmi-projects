@@ -2,21 +2,17 @@
 
 namespace sir {
 
-const double EPSILON = 0.000000001;
-const double INV_EPSILON = 1.0 / EPSILON;
+// 2.0 ** -34 = 0.0000000000582076609134674072265625
+const double EPSILON = 0x1p-34;
 
 GradientDesc::GradientDesc(const SimulResult& _target, double _sim_time) :
     target(_target),
     sim_time(_sim_time),
-    precision(1e-15L)
+    precision(1e-15)
 {
 }
 
 double GradientDesc::error(const SimulResult& curr_res) const {
-    if (this->target.size() != curr_res.size()) {
-        printf("WARRNING target.size()=%zu curr_res.size()=%zu\n", this->target.size(), curr_res.size());
-    }
-
     int len = std::min(this->target.size(), curr_res.size());
     double err = 0.0;
 
@@ -39,8 +35,8 @@ double GradientDesc::cost(double beta, double alpha) const {
 
 std::pair<double, double> GradientDesc::cost_derivative(double beta, double alpha) const {
     return std::make_pair(
-        (this->cost(beta + EPSILON, alpha) - this->cost(beta, alpha)) * INV_EPSILON,
-        (this->cost(beta, alpha + EPSILON) - this->cost(beta, alpha)) * INV_EPSILON
+        (this->cost(beta + EPSILON, alpha) - this->cost(beta, alpha)) / EPSILON,
+        (this->cost(beta, alpha + EPSILON) - this->cost(beta, alpha)) / EPSILON
     );
 }
 
