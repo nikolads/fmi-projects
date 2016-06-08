@@ -23,12 +23,11 @@ Model::Model(DataPoint _initial_cond, double _infect_prob, double _recovery_rate
     infect_prob(_infect_prob),
     recovery_rate(_recovery_rate)
 {
+    this->result_step = 1.0;
+    this->sim_step = 0.001;
 }
 
 SimulResult Model::simulate(double sim_time) {
-    double result_step = 1.0;
-    double sim_step = 0.001;
-
     int nresults = int(ceil(sim_time / result_step));
     SimulResult result;
     result.reserve(nresults);
