@@ -1,5 +1,6 @@
-#include "model.h"
-#include "fit_grad_desc.h"
+#include "sir/sir.h"
+#include "fit/grad_desc.h"
+#include "fit/simul_annealing.h"
 #include <cstdio>
 
 sir::SimulResult target = sir::SimulResult({
@@ -126,38 +127,59 @@ sir::SimulResult target = sir::SimulResult({
 
 void jsonify_result(const char* var_name, const sir::SimulResult& res) {
     printf("%s = [\n", var_name);
-    for (int i = 0; i < res.size(); i++) {
-        printf("\t{s: %lf, i: %lf, r: %lf, time: %.2lf},\n", res[i].S, res[i].I, res[i].R, res[i].time);
+    for (int i = 0; i < res.points.size(); i++) {
+        printf("\t{s: %lf, i: %lf, r: %lf, time: %.2lf},\n",
+            res.points[i].S,
+            res.points[i].I,
+            res.points[i].R,
+            res.points[i].time
+        );
     }
     printf("]\n");
 }
 
-void fit();
+void fit0();
+void fit1();
 void model_0();
 void model_1();
 
 int main() {
-    // fit();
-    model_0();
+    // fit0();
+    fit1();
+    // model_0();
 }
 
 // Gradient descend fitting of alpha and beta
-void fit() {
+void fit0() {
     double alpha = 0.055939648467;
     double beta = 0.000840339158;
 
-    auto gd = sir::GradientDesc(target, 119);
+    auto gd = GradientDesc(target, 119);
 
     std::pair<double, double> fit = gd.fit(beta, alpha, 1e-13L);
     fprintf(stderr, "%.10lf %.10lf\n", fit.first, fit.second);
 }
 
+// Simulated annealing fitting of alpha and beta
+void fit1() {
+    // double beta = 0.000840339158;
+    // double alpha = 0.055939648467;
+
+    double beta = 0.000856222811270;
+    double alpha = 0.055964575959317;
+
+    srand(0);
+
+    auto sa = SimulAnnealing(target, 90);
+    sa.start(beta, alpha, 1e-7);
+}
+
 // Simulation of the fitting results and export in JSON format
 void model_0() {
-    double fit_beta = 0.000840339158;
-    double fit_alpha = 0.055939648467;
+    double fit_beta = 0.000856222811270;
+    double fit_alpha = 0.055964575959317;
 
-    auto model = sir::Model(target[0], fit_beta, fit_alpha);
+    auto model = sir::Model(target.points[0], fit_beta, fit_alpha);
     auto res = model.simulate(119);
 
     jsonify_result("target_result", target);

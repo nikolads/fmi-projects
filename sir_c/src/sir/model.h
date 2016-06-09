@@ -1,22 +1,11 @@
 #ifndef SIR_MODEL_H
 #define SIR_MODEL_H
 
+#include "simul_result.h"
 #include <vector>
 #include <cmath>
 
 namespace sir {
-
-struct DataPoint {
-    DataPoint();
-    DataPoint(double _S, double _I, double _R, double _time = 0.0);
-
-    double S;
-    double I;
-    double R;
-    double time;
-};
-
-typedef std::vector<DataPoint> SimulResult;
 
 /// Analytical simulation of the SIR model
 class Model {

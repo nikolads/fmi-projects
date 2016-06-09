@@ -2,22 +2,6 @@
 
 namespace sir {
 
-DataPoint::DataPoint():
-    S(0.0),
-    I(0.0),
-    R(0.0),
-    time(0.0)
-{
-}
-
-DataPoint::DataPoint(double _S, double _I, double _R, double _time):
-    S(_S),
-    I(_I),
-    R(_R),
-    time(_time)
-{
-}
-
 Model::Model(DataPoint _initial_cond, double _infect_prob, double _recovery_rate):
     initial_cond(_initial_cond),
     infect_prob(_infect_prob),
@@ -29,7 +13,7 @@ Model::Model(DataPoint _initial_cond, double _infect_prob, double _recovery_rate
 
 SimulResult Model::simulate(double sim_time) {
     int nresults = int(ceil(sim_time / result_step));
-    SimulResult result;
+    std::vector<DataPoint> result;
     result.reserve(nresults);
 
     result.push_back(this->initial_cond);
@@ -56,7 +40,7 @@ SimulResult Model::simulate(double sim_time) {
         prev = curr;
     }
 
-    return result;
+    return SimulResult(std::move(result));
 }
 
 }

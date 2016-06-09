@@ -1,36 +1,19 @@
-#include "fit_grad_desc.h"
-
-namespace sir {
+#include "grad_desc.h"
 
 // 2.0 ** -34 = 0.0000000000582076609134674072265625
 const double EPSILON = 0x1p-34;
 
-GradientDesc::GradientDesc(const SimulResult& _target, double _sim_time) :
+GradientDesc::GradientDesc(const sir::SimulResult& _target, double _sim_time) :
+    precision(1e-15),
     target(_target),
-    sim_time(_sim_time),
-    precision(1e-15)
+    sim_time(_sim_time)
 {
 }
 
-double GradientDesc::error(const SimulResult& curr_res) const {
-    int len = std::min(this->target.size(), curr_res.size());
-    double err = 0.0;
-
-    for (int i = 0; i < len; i++) {
-        double delta = this->target[i].S - curr_res[i].S;
-        err += delta * delta;
-
-        delta = this->target[i].I - curr_res[i].I;
-        err += delta * delta;
-    }
-
-    return err;
-}
-
 double GradientDesc::cost(double beta, double alpha) const {
-    Model model = Model(this->target[0], beta, alpha);
-    SimulResult curr_res = model.simulate(this->sim_time);
-    return this->error(curr_res);
+    sir::Model model = sir::Model(this->target.points[0], beta, alpha);
+    sir::SimulResult curr_res = model.simulate(this->sim_time);
+    return this->target.error(curr_res);
 }
 
 std::pair<double, double> GradientDesc::cost_derivative(double beta, double alpha) const {
@@ -91,6 +74,4 @@ std::pair<double, double> GradientDesc::fit(double init_beta, double init_alpha,
     }
 
     return std::make_pair(beta, alpha);
-}
-
 }
