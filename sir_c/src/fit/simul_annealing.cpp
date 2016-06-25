@@ -14,7 +14,7 @@ class Simulation {
 public:
     Simulation(const sir::SimulResult& _target, double _sim_time, double init_temp, double _cooling_rate, OptimalSol& opt);
 
-    void start(double init_beta, double init_alpha, double max_step);
+    void start(double init_beta, double init_alpha, double step_beta, double step_alpha);
 
 private:
     double cost(double beta, double alpha) const;
@@ -46,7 +46,7 @@ Simulation::Simulation(const sir::SimulResult& _target, double _sim_time, double
 {
 }
 
-void Simulation::start(double init_beta, double init_alpha, double max_step) {
+void Simulation::start(double init_beta, double init_alpha, double step_beta, double step_alpha) {
     this->curr = std::make_pair(init_beta, init_alpha);
     this->curr_cost = this->cost(this->curr.first, this->curr.second);
 
@@ -57,14 +57,14 @@ void Simulation::start(double init_beta, double init_alpha, double max_step) {
         this->temp = this->init_temp;
 
         while (this->temp != 0) {
-            double angle = 360 * float_rand();
-            double dist = max_step * std::max(0.1, this->temp / this->init_temp) * float_rand();
+            double angle = 2 * M_PI * float_rand();
+            double rad = std::max(0.1, this->temp / this->init_temp) * float_rand();
 
-            double new_beta = this->curr.first + cos(angle) * dist;
-            double new_alpha = this->curr.second + sin(angle) * dist;
+            double new_beta = this->curr.first + cos(angle) * rad * step_beta;
+            double new_alpha = this->curr.second + sin(angle) * rad * step_alpha;
             double new_cost = this->cost(new_beta, new_alpha);
 
-            if (this->acceptance(new_cost) > float_rand()) {
+            if (float_rand() < this->acceptance(new_cost)) {
                 this->curr = std::make_pair(new_beta, new_alpha);
                 this->curr_cost = new_cost;
 
@@ -85,6 +85,13 @@ void Simulation::start(double init_beta, double init_alpha, double max_step) {
             printf("optimal: (%.15lf, %.15lf), cost=%lf\n", optimal.first, optimal.second, optimal_cost);
         }
         this->global_optimal.mtx.unlock();
+
+        double return_chance = std::max(0.9 - exp((this->global_optimal.cost - this->curr_cost) / this->global_optimal.cost), 0.0);
+        if (return_chance > 0.0) {
+            printf("[%lx] (%.15lf, %.15lf), cost=%lf, deviation=%lf, return_chance=%lf\n", long(std::this_thread::get_id),
+                this->curr.first, this->curr.second, this->curr_cost,
+                (this->curr_cost - this->global_optimal.cost) / this->global_optimal.cost, return_chance);
+        }
     }
 }
 
@@ -95,20 +102,20 @@ double Simulation::cost(double beta, double alpha) const {
 }
 
 double Simulation::acceptance(double new_cost) const {
-    return exp((new_cost - this->curr_cost) / this->temp);
+    return exp((this->curr_cost - new_cost) / this->temp);
 }
 
 
 SimulAnnealing::SimulAnnealing(const sir::SimulResult& _target, double _sim_time):
     nthreads(4),
-    init_temp(1000),
+    init_temp(500),
     cooling_rate(1),
     target(_target),
     sim_time(_sim_time)
 {
 }
 
-void SimulAnnealing::start(double init_beta, double init_alpha, double max_step) {
+void SimulAnnealing::start(double init_beta, double init_alpha, double step_beta, double step_alpha) {
     OptimalSol opt;
     opt.cost = std::numeric_limits<double>::infinity();
 
@@ -116,7 +123,7 @@ void SimulAnnealing::start(double init_beta, double init_alpha, double max_step)
 
     for (int i = 0; i < this->nthreads; i++) {
         Simulation simul = Simulation(this->target, this->sim_time, this->init_temp, this->cooling_rate, opt);
-        threads.push_back(std::thread(&Simulation::start, std::move(simul), init_beta, init_alpha, max_step));
+        threads.push_back(std::thread(&Simulation::start, std::move(simul), init_beta, init_alpha, step_beta, step_alpha));
     }
 
     for (int i = 0; i < this->nthreads; i++) {

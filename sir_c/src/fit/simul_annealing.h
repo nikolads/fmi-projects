@@ -1,8 +1,10 @@
 #ifndef FIT_SIMULATED_ANNEALING_H
 #define FIT_SIMULATED_ANNEALING_H
 
-#include "sir/sir.h"
+#define USE_MATH_DEFINES
 #include <cmath>
+
+#include "sir/sir.h"
 #include <cstdlib>
 #include <limits>
 #include <mutex>
@@ -12,7 +14,7 @@ class SimulAnnealing {
 public:
     SimulAnnealing(const sir::SimulResult& _target, double _sim_time);
 
-    void start(double init_beta, double init_alpha, double max_step);
+    void start(double init_beta, double init_alpha, double step_beta, double step_alpha);
 
 private:
     double cost(double beta, double alpha) const;

@@ -53,13 +53,18 @@ function Sir(graph, infection_prob, recovery_rate, sir_tree) {
 
         graph.nodes.forEach(function(node) {
             if (node.data.old_state == "I") {
-                // node.data.recovery += recovery_rate;
-                if (Math.random() < that.recovery_rate) {
-                    // if (node.data.recovery > 1.0) {
+                node.data.recovery += recovery_rate;
+                if (node.data.recovery > 1.0) {
                     makeRemoved(node);
                     that.infected--;
                     that.recoved++;
                 }
+
+                // if (Math.random() < that.recovery_rate) {
+                //     makeRemoved(node);
+                //     that.infected--;
+                //     that.recoved++;
+                // }
             }
         });
 
@@ -71,6 +76,7 @@ function Sir(graph, infection_prob, recovery_rate, sir_tree) {
         graph.notify();
 
         // console.log(that.susceptible, that.infected, that.recoved);
+        console.log(that.susceptible, that.infected, that.recoved, that.time);
         jQuery(document).trigger("sir_simulation_tick", [that.susceptible, that.infected, that.recoved]);
 
         if (that.susceptible <= 0 || that.infected <= 0) {

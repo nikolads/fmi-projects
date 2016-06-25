@@ -35,6 +35,9 @@ double SimulResult::error(const SimulResult& other) const {
     for (int i = 0; i < len; i++) {
         double delta = this->points[i].I - other.points[i].I;
         err += delta * delta;
+
+        delta = this->points[i].S - other.points[i].S;
+        err += delta * delta;
     }
 
     return err;

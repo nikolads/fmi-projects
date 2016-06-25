@@ -23,7 +23,7 @@ class FitSir:
     def cost(self, beta):
         self.sir.infect_prob = beta
         sir_results = self.sir.simulate_points(self.time, sim_step=self.step)
-        return self.error(sir_results.S)
+        return self.error(sir_results.I)
 
     def cost_derivative(self, beta):
         return (self.cost(beta + EPSILON) - self.cost(beta)) * INV_EPSILON
@@ -40,12 +40,14 @@ class FitSir:
 
             beta = beta - step * curr_cost
 
-            curr_step = curr_step + 1
-            if curr_step == 100:
-                print("Simulating... beta={}".format(beta));
-                curr_step = 0
+            # curr_step = curr_step + 1
+            # if curr_step == 100:
+            #     print("Simulating... beta={}".format(beta));
+            #     curr_step = 0
 
             if abs(curr_cost) < self.precision:
                 break
+
+            prev_cost = curr_cost
 
         return beta

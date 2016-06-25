@@ -132,8 +132,6 @@ GraphBuilder.BarabasiAlbert = function(graph, m0, m, final_size, new_node_callba
         }
     }
 
-
-
     var nodeInterval = setInterval(function() {
         node_size = that.graph.nodes.length;
 

@@ -45,8 +45,8 @@ jQuery(function() {
     makeRecovered(node);
     node.data.color = "#8e44ad";
   }
-// sir = new Sir(graph, 0.2, 0.08, sir_tree);
-  sir = new Sir(graph, 0.012, 0.04, sir_tree);
+  sir = new Sir(graph, 0.04, 0.08, sir_tree);
+  // sir = new Sir(graph, 0.012, 0.04, sir_tree);
 
   var gui = new dat.GUI();
   var sirg = new SirGUIWrap(gui, sir);
