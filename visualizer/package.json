@@ -1,0 +1,8 @@
+{
+    "dependencies": {
+        "d3": "^4.5"
+    },
+    "devDependencies": {
+        "browserify": "^14.0.0"
+    }
+}
