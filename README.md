@@ -42,4 +42,4 @@ node_modules/.bin/browserify src/main.js -o bundle.js
 
 ## Used technologies for the client
 - `d3` - for rendering all the stuff.
-- `browserify` - because writing frontend JavaScript is a pain.
+- `browserify` - because writing JavaScript code using the Web APIs is a pain.
