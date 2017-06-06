@@ -1,13 +1,13 @@
 //! Single threaded (sequential) dfs algorithm
 
-use graph::Graph;
+use graph::GraphPart;
 use tree::Tree;
 
-pub fn dfs<G: Graph, T: Tree>(graph: &G) -> Vec<T> {
+pub fn dfs<G: GraphPart, T: Tree>(graph: &G) -> Vec<T> {
     let mut result = Vec::new();
-    let mut used = vec![false; graph.num_vertices()];
+    let mut used = vec![false; graph.num_owned_vertices()];
 
-    for root in graph.vertices() {
+    for root in graph.owned_vertices() {
         if used[root] {
             continue;
         }
@@ -17,7 +17,7 @@ pub fn dfs<G: Graph, T: Tree>(graph: &G) -> Vec<T> {
 
         used[root] = true;
 
-        for v in graph.neighbours(root).rev() {
+        for v in graph.neighbours(root) {
             stack.push((root, v));
         }
 
@@ -29,7 +29,7 @@ pub fn dfs<G: Graph, T: Tree>(graph: &G) -> Vec<T> {
 
                 tree.add(parent, top);
 
-                for v in graph.neighbours(top).rev() {
+                for v in graph.neighbours(top) {
                     stack.push((top, v));
                 }
             }

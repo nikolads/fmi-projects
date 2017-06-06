@@ -6,3 +6,6 @@ authors = ["Nikola Stoyanov <ns.barzakov@gmail.com>"]
 [dependencies]
 clap = "^2.23.3"
 rand = "^0.3.15"
+
+[profile.release]
+lto = true

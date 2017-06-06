@@ -1,40 +1,83 @@
-use super::Graph;
+extern crate rand;
 
-use std::cmp;
-use std::iter::DoubleEndedIterator;
+use super::GraphPart;
+use self::rand::{StdRng, Rng, SeedableRng};
+use std::collections::HashSet;
+use std::ops::Range;
 
+#[derive(Debug)]
 pub struct AdjLists {
-    lists: Vec<Vec<usize>>
+    owned_verts: Range<usize>,
+    all_verts: Range<usize>,
+    lists: Vec<Vec<usize>>,
 }
 
 impl AdjLists {
-    pub fn new() -> AdjLists {
+    pub fn new(owned_verts: Range<usize>, all_verts: Range<usize>) -> AdjLists {
+        assert!(owned_verts.start <= owned_verts.end);
+        assert!(all_verts.start <= all_verts.end);
+
         AdjLists {
-            lists: Vec::new()
+            owned_verts: owned_verts.clone(),
+            all_verts: all_verts,
+            lists: vec![Vec::new(); owned_verts.end - owned_verts.start],
         }
     }
 
     pub fn add_edge(&mut self, from: usize, to: usize) {
-        let max = cmp::max(from, to) + 1;
+        assert!(self.owned_verts.contains(from));
+        assert!(self.all_verts.contains(to));
 
-        if self.lists.len() < max {
-            self.lists.resize(max, Vec::new());
+        let indx = self.vert_to_index(from);
+        self.lists[indx].push(to);
+    }
+
+    pub fn generate_edges_directed(&mut self, n_edges: usize, seed: Option<usize>) {
+        let mut edges = HashSet::with_capacity(n_edges as usize);
+
+        let mut rng = match seed {
+            Some(seed) => StdRng::from_seed(&[seed]),
+            None => StdRng::new().unwrap(),
+        };
+
+        let n_owned = self.num_owned_vertices();
+        let n_target = self.num_target_vertices();
+
+        while edges.len() != n_edges as usize {
+            let from = rng.gen::<usize>() % n_owned;
+            let from = self.index_to_vert(from);
+            let to = rng.gen::<usize>() % n_target;
+
+            edges.insert((from, to));
         }
 
-        self.lists[from].push(to);
+        for (u, v) in edges {
+            self.add_edge(u, v);
+        }
+    }
+
+    #[inline]
+    fn vert_to_index(&self, vert: usize) -> usize {
+        vert - self.owned_verts.start
+    }
+
+    #[inline]
+    fn index_to_vert(&self, index: usize) -> usize {
+        index + self.owned_verts.start
     }
 }
 
-impl Graph for AdjLists {
-    fn vertices(&self) -> Box<DoubleEndedIterator<Item=usize>> {
-        Box::new(0 .. self.lists.len())
+impl GraphPart for AdjLists {
+    fn owned_vertices(&self) -> Box<Iterator<Item=usize>> {
+        Box::new(self.owned_verts.clone())
     }
 
-    fn neighbours<'a>(&'a self, node:usize) -> Box<DoubleEndedIterator<Item=usize> + 'a> {
-        Box::new(self.lists[node].iter().cloned())
+    fn target_vertices(&self) -> Box<Iterator<Item=usize>> {
+        Box::new(self.all_verts.clone())
     }
 
-    fn num_vertices(&self) -> usize {
-        self.lists.len()
+    fn neighbours<'a>(&'a self, vert: usize) -> Box<Iterator<Item=usize> + 'a> {
+        let indx = self.vert_to_index(vert);
+        Box::new(self.lists[indx].iter().cloned())
     }
 }
