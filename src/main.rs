@@ -62,17 +62,82 @@ fn main() {
                     let mut graph = AdjLists::new(owned, target);
                     graph.generate_edges_directed(edges, None);
 
-                    answ_sender.send(graph).unwrap();
+                    answ_sender.send((i, graph)).unwrap();
                 });
             }
 
             mem::drop(answ_sender);
 
-            for graph in answ_receiver.iter() {
-                println!("{:?}", graph);
+            let mut graph = Vec::with_capacity(threads);
+            unsafe { graph.set_len(threads) };
+
+            for (i, part) in answ_receiver.iter() {
+                graph[i] = part;
             }
 
+            println!("{:?}", graph);
+
+            /************************************************/
+            use std::sync::{Arc, RwLock};
+            use std::usize;
+
+            let used = (0..n_verts).into_iter().map(|_| RwLock::new((usize::MAX, usize::MAX))).collect::<Vec<_>>();
+            let used = Arc::new(used);
+
+            let mut senders = Vec::with_capacity(threads);
+            let mut receivers = Vec::with_capacity(threads);
+            for _ in 0..threads {
+                let (sender, receiver) = mpsc::channel();
+                senders.push(sender);
+
+                receivers.push(receiver);
+            }
+
+            for (i, (thread, recv)) in pool.threads().zip(receivers).enumerate() {
+                let used = used.clone();
+                let senders = senders.clone();
+
+                thread.execute(move || dfs(i, recv, senders, used));
+            }
+
+            senders[0].send(Msg::Exit).unwrap();
+
             pool.join().unwrap();
+        }
+    }
+}
+
+use std::sync::mpsc::{Sender, Receiver};
+use std::sync::{Arc, RwLock};
+
+enum Msg {
+    Node(usize, usize),
+    Exit,
+}
+
+fn dfs(branch: usize, receiver: Receiver<Msg>, senders: Vec<Sender<Msg>>, used: Arc<Vec<RwLock<(usize, usize)>>>) {
+    for msg in receiver.iter() {
+        match msg {
+            Msg::Node(vert, parent) => {
+                {
+                    let lock = used[vert].read().unwrap();
+                    let (curr_parent, curr_branch) = *lock;
+
+                    if curr_branch < branch {
+                        continue;
+                    }
+
+                    if curr_branch == branch && curr_parent < parent {
+                        continue;
+                    }
+
+                    // TODO
+                }
+            },
+            Msg::Exit => {
+                let _ = senders[branch+1].send(Msg::Exit);
+                return;
+            }
         }
     }
 }

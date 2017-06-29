@@ -54,6 +54,10 @@ impl AdjLists {
         for (u, v) in edges {
             self.add_edge(u, v);
         }
+
+        for list in &mut self.lists {
+            list.sort();
+        }
     }
 
     #[inline]
