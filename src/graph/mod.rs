@@ -3,8 +3,8 @@ pub mod adj_lists;
 // TODO: remove the box when either higher-kindered associated items or
 // impl Trait in Traits are implemented
 pub trait Graph {
-    fn vertices<'a>(&'a self) -> Box<Iterator<Item = u32> + 'a>;
-    fn neighbours<'a>(&'a self, vert: u32) -> Box<Iterator<Item = u32> + 'a>;
+    fn vertices<'a>(&'a self) -> Box<Iterator<Item = usize> + 'a>;
+    fn neighbours<'a>(&'a self, vert: usize) -> Box<Iterator<Item = usize> + 'a>;
 
     fn num_vertices(&self) -> usize {
         self.vertices().count()
