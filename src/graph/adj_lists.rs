@@ -97,7 +97,9 @@ impl Part {
             let from = self.index_to_vert(from);
             let to = rng.gen::<usize>() % n_target;
 
-            edges.insert((from, to));
+            if from != to {
+                edges.insert((from, to));
+            }
         }
 
         for (u, v) in edges {

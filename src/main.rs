@@ -84,7 +84,10 @@ fn main() {
             mem::drop(answ_tx);
 
             let graph = Arc::new(AdjLists::from_parts(n_verts, answ_rx.iter()));
-            // println!("{:?}", graph);
+
+            if n_verts <= 100 {
+                println!("{:?}", graph);
+            }
 
             let ts_generate = Instant::now();
 
@@ -95,12 +98,13 @@ fn main() {
             let state = Arc::new(State::new(&graph, &pool));
             let vec = State::run(&state);
 
-            // println!("{:?}", vec);
+            if n_verts <= 100 {
+                println!("{:?}", vec);
+            }
 
             let ts_dfs = Instant::now();
 
             println!("loop count: {}", dfs::threaded::LOOP_COUNTER.load(::std::sync::atomic::Ordering::SeqCst));
-            println!("worker_get: {}", dfs::threaded::WORKER_GET_TIME.load(::std::sync::atomic::Ordering::SeqCst) as f64 * 1e-9);
             println!("generate: {}", format_dur(&ts_generate.duration_since(ts_begin)));
             println!("dfs: {}", format_dur(&ts_dfs.duration_since(ts_generate)));
         }
