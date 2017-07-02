@@ -93,7 +93,7 @@ fn main() {
 
             let mut pool = Pool::new(threads as usize).unwrap();
 
-            if directed {
+            // if directed {
                 let (answ_tx, answ_rx) = mpsc::sync_channel(threads as usize);
 
                 for i in 0..threads {
@@ -117,44 +117,44 @@ fn main() {
                 mem::drop(answ_tx);
 
                 let graph = Arc::new(AdjLists::from_parts(n_verts, answ_rx.iter()));
-            }
-            else {
-                use graph::adj_matrix::AdjMatrix;
+            // }
+            // else {
+            //     use graph::adj_matrix::AdjMatrix;
 
-                let (answ_tx, answ_rx) = mpsc::sync_channel(threads as usize);
-                let graph = AdjMatrix::new(n_verts);
+            //     let (answ_tx, answ_rx) = mpsc::sync_channel(threads as usize);
+            //     let graph = AdjMatrix::new(n_verts);
 
-                for mut part in graph.parts(threads) {
-                    let answ_tx = answ_tx.clone();
+            //     for mut part in graph.parts(threads) {
+            //         let answ_tx = answ_tx.clone();
 
-                    pool.spawn(move || {
-                        part.generate_edges_undirected(n_edges / threads / 2, None);
-                        answ_tx.send(()).unwrap();
-                    });
-                }
+            //         pool.spawn(move || {
+            //             part.generate_edges_undirected(n_edges / threads / 2, None);
+            //             answ_tx.send(()).unwrap();
+            //         });
+            //     }
 
-                mem::drop(answ_tx);
-                let _ = answ_rx.iter().collect::<Vec<_>>();
-            }
+            //     mem::drop(answ_tx);
+            //     let _ = answ_rx.iter().collect::<Vec<_>>();
+            // }
 
             let ts_generate = Instant::now();
 
-            // use std::sync::{Arc, Mutex};
-            // use dfs::threaded::State;
+            use std::sync::Mutex;
+            use dfs::threaded::State;
 
-            // let pool = Arc::new(Mutex::new(pool));
-            // let state = Arc::new(State::new(&graph, &pool));
-            // let vec = State::run(&state);
+            let pool = Arc::new(Mutex::new(pool));
+            let state = Arc::new(State::new(&graph, &pool));
+            let vec = State::run(&state);
 
-            // if n_verts <= 100 {
-            //     println!("{:?}", vec);
-            // }
+            if n_verts <= 100 {
+                println!("{:?}", vec);
+            }
 
-            // let ts_dfs = Instant::now();
+            let ts_dfs = Instant::now();
 
-            // println!("loop count: {}", dfs::threaded::LOOP_COUNTER.load(::std::sync::atomic::Ordering::SeqCst));
+            println!("loop count: {}", dfs::threaded::LOOP_COUNTER.load(::std::sync::atomic::Ordering::SeqCst));
             println!("generate: {}", format_dur(&ts_generate.duration_since(ts_begin)));
-            // println!("dfs: {}", format_dur(&ts_dfs.duration_since(ts_generate)));
+            println!("dfs: {}", format_dur(&ts_dfs.duration_since(ts_generate)));
         }
     }
 }
