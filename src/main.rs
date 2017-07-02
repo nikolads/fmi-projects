@@ -21,6 +21,8 @@ fn main() {
     let threads = matches.value_of("threads").map_or(1, |threads| threads.parse::<usize>().unwrap());
     println!("Running on {} threads", threads);
 
+    let directed = !matches.is_present("undirected");
+
     if let Some(_input) = matches.value_of("input") {
         unimplemented!();
     }
@@ -29,27 +31,55 @@ fn main() {
         let n_edges = matches.value_of("edges").unwrap().parse::<usize>().unwrap();
 
         if threads == 0 {
-            use std::iter;
-            use graph::adj_lists::{AdjLists, Part};
-            use dfs::sequential;
-            use tree::ParentArray;
-
             let ts_begin = Instant::now();
 
-            let mut part =  Part::new(0..n_verts, 0..n_verts);
-            part.generate_edges_directed(n_edges, None);
-            let graph = AdjLists::from_parts(n_verts, iter::once(part));
+            if directed {
+                use std::iter;
+                use graph::adj_lists::{AdjLists, Part};
+                use dfs::sequential;
+                use tree::ParentArray;
 
-            let ts_generate = Instant::now();
+                let mut part =  Part::new(0..n_verts, 0..n_verts);
+                part.generate_edges_directed(n_edges, None);
+                let graph = AdjLists::from_parts(n_verts, iter::once(part));
 
-            // println!("graph: {}", graph);
+                let ts_generate = Instant::now();
 
-            let forest = sequential::dfs::<_, ParentArray>(&graph);
+                let forest = sequential::dfs::<_, ParentArray>(&graph);
 
-            let ts_dfs = Instant::now();
+                let ts_dfs = Instant::now();
 
-            println!("generate: {}", format_dur(&ts_generate.duration_since(ts_begin)));
-            println!("dfs: {}", format_dur(&ts_dfs.duration_since(ts_generate)));
+                if n_verts <= 100 {
+                    println!("graph: {:?}", graph);
+                    println!("forest: {:?}", forest);
+                }
+
+                println!("generate: {}", format_dur(&ts_generate.duration_since(ts_begin)));
+                println!("dfs: {}", format_dur(&ts_dfs.duration_since(ts_generate)));
+            }
+            else {
+                use graph::adj_matrix::AdjMatrix;
+                use dfs::sequential;
+                use tree::ParentArray;
+
+                let graph = AdjMatrix::new(n_verts);
+                let mut part = graph.parts(1).nth(0).unwrap();
+                part.generate_edges_undirected(n_edges, None);
+
+                let ts_generate = Instant::now();
+
+                let forest = sequential::dfs::<_, ParentArray>(&graph);
+
+                let ts_dfs = Instant::now();
+
+                if n_verts <= 100 {
+                    println!("graph: {:?}", graph);
+                    println!("forest: {:?}", forest);
+                }
+
+                println!("generate: {}", format_dur(&ts_generate.duration_since(ts_begin)));
+                println!("dfs: {}", format_dur(&ts_dfs.duration_since(ts_generate)));
+            }
         }
         else {
             use std::mem;
@@ -91,10 +121,10 @@ fn main() {
 
             let ts_generate = Instant::now();
 
-            use std::sync::{Arc, RwLock};
+            use std::sync::{Arc, Mutex};
             use dfs::threaded::State;
 
-            let pool = Arc::new(RwLock::new(pool));
+            let pool = Arc::new(Mutex::new(pool));
             let state = Arc::new(State::new(&graph, &pool));
             let vec = State::run(&state);
 
