@@ -6,7 +6,7 @@ use self::rand::distributions::range::Range as RngRange;
 
 use std::cell::UnsafeCell;
 use std::ops::Range;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use super::Graph;
 
@@ -21,14 +21,14 @@ pub struct Matrix {
 #[derive(Debug)]
 pub struct AdjMatrix {
     n_vert: usize,
-    matrix: Rc<UnsafeCell<Matrix>>,
+    matrix: Arc<UnsafeCell<Matrix>>,
 }
 
 impl AdjMatrix {
     pub fn new(n_vert: usize) -> Self {
         AdjMatrix {
             n_vert: n_vert,
-            matrix: Rc::new(UnsafeCell::new(Matrix { data: vec![false; n_vert * n_vert], borrowed_flag: false })),
+            matrix: Arc::new(UnsafeCell::new(Matrix { data: vec![false; n_vert * n_vert], borrowed_flag: false })),
         }
     }
 
@@ -67,15 +67,18 @@ impl Graph for AdjMatrix {
     }
 }
 
+// what could possibly go wrong
+unsafe impl Send for Part{}
+
 #[derive(Debug, Clone)]
 pub struct Part {
     owned_verts: Range<usize>,
     total: usize,
-    matrix: Rc<UnsafeCell<Matrix>>
+    matrix: Arc<UnsafeCell<Matrix>>
 }
 
 impl Part {
-    pub fn new(owned: Range<usize>, total: usize, matrix: &Rc<UnsafeCell<Matrix>>) -> Self {
+    pub fn new(owned: Range<usize>, total: usize, matrix: &Arc<UnsafeCell<Matrix>>) -> Self {
         assert!(owned.start <= owned.end);
 
         Part {
@@ -99,6 +102,9 @@ impl Part {
             None => StdRng::new().unwrap(),
         };
 
+        println!("{:?}", self.owned_verts);
+        println!("{:?}", n_edges);
+
         let mut owned = RngRange::new(self.owned_verts.start, self.owned_verts.end);
         let mut cnt = 0;
 
@@ -109,7 +115,7 @@ impl Part {
             let to = target.sample(&mut rng);
 
             unsafe {
-                if from != to && (*self.matrix.get()).data[from * self.total + to] {
+                if from != to && !(*self.matrix.get()).data[from * self.total + to] {
                     (*self.matrix.get()).data[from * self.total + to] = true;
                     (*self.matrix.get()).data[to * self.total + from] = true;
                     cnt += 1;

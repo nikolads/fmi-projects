@@ -63,8 +63,9 @@ fn main() {
                 use tree::ParentArray;
 
                 let graph = AdjMatrix::new(n_verts);
+
                 let mut part = graph.parts(1).nth(0).unwrap();
-                part.generate_edges_undirected(n_edges, None);
+                part.generate_edges_undirected(n_edges / 2, None);
 
                 let ts_generate = Instant::now();
 
@@ -83,6 +84,7 @@ fn main() {
         }
         else {
             use std::mem;
+            use std::sync::Arc;
             use std::sync::mpsc;
             use graph::adj_lists::AdjLists;
             use thread_pool::Pool;
@@ -91,52 +93,68 @@ fn main() {
 
             let mut pool = Pool::new(threads as usize).unwrap();
 
-            let (answ_tx, answ_rx) = mpsc::sync_channel(threads as usize);
+            if directed {
+                let (answ_tx, answ_rx) = mpsc::sync_channel(threads as usize);
 
-            for i in 0..threads {
-                let answ_tx = answ_tx.clone();
+                for i in 0..threads {
+                    let answ_tx = answ_tx.clone();
 
-                let vert_per_thread = n_verts / threads;
-                let owned = (i * vert_per_thread)..((i+1) * vert_per_thread);
-                let target = 0..n_verts;
-                let edges = n_edges / threads;
+                    let vert_per_thread = n_verts / threads;
+                    let owned = (i * vert_per_thread)..((i+1) * vert_per_thread);
+                    let target = 0..n_verts;
+                    let edges = n_edges / threads;
 
-                pool.spawn(move || {
-                    use graph::adj_lists::Part;
+                    pool.spawn(move || {
+                        use graph::adj_lists::Part;
 
-                    let mut part = Part::new(owned, target);
-                    part.generate_edges_directed(edges, None);
+                        let mut part = Part::new(owned, target);
+                        part.generate_edges_directed(edges, None);
 
-                    answ_tx.send(part).unwrap();
-                });
+                        answ_tx.send(part).unwrap();
+                    });
+                }
+
+                mem::drop(answ_tx);
+
+                let graph = Arc::new(AdjLists::from_parts(n_verts, answ_rx.iter()));
             }
+            else {
+                use graph::adj_matrix::AdjMatrix;
 
-            mem::drop(answ_tx);
+                let (answ_tx, answ_rx) = mpsc::sync_channel(threads as usize);
+                let graph = AdjMatrix::new(n_verts);
 
-            let graph = Arc::new(AdjLists::from_parts(n_verts, answ_rx.iter()));
+                for mut part in graph.parts(threads) {
+                    let answ_tx = answ_tx.clone();
 
-            if n_verts <= 100 {
-                println!("{:?}", graph);
+                    pool.spawn(move || {
+                        part.generate_edges_undirected(n_edges / threads / 2, None);
+                        answ_tx.send(()).unwrap();
+                    });
+                }
+
+                mem::drop(answ_tx);
+                let _ = answ_rx.iter().collect::<Vec<_>>();
             }
 
             let ts_generate = Instant::now();
 
-            use std::sync::{Arc, Mutex};
-            use dfs::threaded::State;
+            // use std::sync::{Arc, Mutex};
+            // use dfs::threaded::State;
 
-            let pool = Arc::new(Mutex::new(pool));
-            let state = Arc::new(State::new(&graph, &pool));
-            let vec = State::run(&state);
+            // let pool = Arc::new(Mutex::new(pool));
+            // let state = Arc::new(State::new(&graph, &pool));
+            // let vec = State::run(&state);
 
-            if n_verts <= 100 {
-                println!("{:?}", vec);
-            }
+            // if n_verts <= 100 {
+            //     println!("{:?}", vec);
+            // }
 
-            let ts_dfs = Instant::now();
+            // let ts_dfs = Instant::now();
 
-            println!("loop count: {}", dfs::threaded::LOOP_COUNTER.load(::std::sync::atomic::Ordering::SeqCst));
+            // println!("loop count: {}", dfs::threaded::LOOP_COUNTER.load(::std::sync::atomic::Ordering::SeqCst));
             println!("generate: {}", format_dur(&ts_generate.duration_since(ts_begin)));
-            println!("dfs: {}", format_dur(&ts_dfs.duration_since(ts_generate)));
+            // println!("dfs: {}", format_dur(&ts_dfs.duration_since(ts_generate)));
         }
     }
 }
