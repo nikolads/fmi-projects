@@ -14,6 +14,7 @@ pub fn dfs<G: Graph, T: Tree>(graph: &G) -> Vec<T> {
         }
 
         let mut tree = T::new(root);
+        used[root] = true;
 
         for v in graph.neighbours(root) {
             if !used[v] {
@@ -27,7 +28,7 @@ pub fn dfs<G: Graph, T: Tree>(graph: &G) -> Vec<T> {
 
             if !used[vert] {
                 used[vert] = true;
-                tree.add(parent, vert);
+                tree.add(vert, parent);
 
                 for child in graph.neighbours(vert) {
                     if !used[child] {

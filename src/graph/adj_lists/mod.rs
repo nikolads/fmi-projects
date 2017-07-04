@@ -2,11 +2,13 @@ extern crate rand;
 
 use self::rand::{StdRng, Rng, SeedableRng};
 
-use std::iter::IntoIterator;
 use std::collections::HashSet;
+use std::iter::IntoIterator;
 use std::ops::Range;
 
 use super::Graph;
+
+mod from_file;
 
 #[derive(Debug, Clone)]
 pub struct AdjLists {
