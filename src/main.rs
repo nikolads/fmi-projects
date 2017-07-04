@@ -26,8 +26,6 @@ fn main() {
     let threads = matches.value_of("threads").map_or(1, |threads| threads.parse::<usize>().unwrap());
     println!("Running on {} threads", threads);
 
-    // let directed = !matches.is_present("undirected");
-
     let n_verts = matches.value_of("vertices").unwrap().parse::<usize>().unwrap();
     let n_edges = matches.value_of("edges").unwrap().parse::<usize>().unwrap();
 

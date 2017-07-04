@@ -18,12 +18,6 @@ pub fn parse() -> ArgMatches<'static> {
             .takes_value(true)
             .value_name("FILE")
             .help("File to read graph input data from"))
-        .arg(Arg::with_name("output")
-            .short("o")
-            .long("output")
-            .takes_value(true)
-            .value_name("FILE")
-            .help("File to write output to"))
         .arg(Arg::with_name("vertices")
             .short("n")
             .long("vertices")
@@ -35,15 +29,7 @@ pub fn parse() -> ArgMatches<'static> {
             .long("edges")
             .takes_value(true)
             .value_name("N")
-            .help("Generate a graph with N edges"))
-        .arg(Arg::with_name("undirected")
-            .long("undirected")
-            .help("Generate an undirected graph"))
-        .arg(Arg::with_name("seed")
-            .long("seed")
-            .takes_value(true)
-            .value_name("N")
-            .help("Seed to use for the random number generator"));
+            .help("Generate a graph with N edges"));
 
     app.get_matches()
 }

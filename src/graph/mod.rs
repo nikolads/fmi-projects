@@ -1,5 +1,4 @@
 pub mod adj_lists;
-pub mod adj_matrix;
 
 // TODO: remove the box when either higher-kindered associated items or
 // impl Trait in Traits are implemented
