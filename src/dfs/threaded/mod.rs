@@ -1,199 +1,153 @@
-use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
+use std::sync::mpsc::{self, Sender};
 use std::thread::{self, Thread};
+use std::usize;
 
 use graph::Graph;
 use thread_pool::Pool;
-use self::visit::{Parent, Visited};
+use tree::Tree;
 
-mod visit;
+#[derive(Debug)]
+pub struct Dfs<G: Graph + Send + Sync + 'static> {
+    inner: Arc<Inner<G>>
+}
 
-pub struct State<G: Graph + Send + Sync + 'static> {
+#[derive(Debug)]
+pub struct Inner<G: Graph + Send + Sync + 'static> {
     graph: Arc<G>,
-    workers: Workers,
-    parents: Vec<Visited>,
-    pool: Arc<Mutex<Pool>>,
-    wait_cnt: AtomicUsize,
-    wait_thread: Thread,
+    owner: Vec<AtomicUsize>,
 }
 
-impl<G: Graph + Send + Sync + 'static> State<G> {
-    pub fn new(graph: &Arc<G>, pool: &Arc<Mutex<Pool>>) -> Self {
-        State {
-            graph: graph.clone(),
-            workers: Workers::new(),
-            parents: (0..graph.num_vertices()).into_iter().map(|_| Visited::max()).collect(),
-            pool: pool.clone(),
-            wait_cnt: AtomicUsize::new(0),
-            wait_thread: thread::current(),
+impl<G: Graph + Send + Sync + 'static> Dfs<G> {
+    pub fn new(graph: &Arc<G>) -> Self {
+        Dfs {
+            inner: Arc::new(Inner {
+                graph: graph.clone(),
+                owner: (0..graph.num_vertices()).into_iter().map(|_| AtomicUsize::new(usize::MAX)).collect(),
+            })
         }
     }
 
-    pub fn run(this: &Arc<Self>) -> Vec<Parent> {
+    pub fn run<T>(&mut self, pool: &Arc<Mutex<Pool>>) -> Vec<T> where
+        T: Tree + Send + 'static,
+    {
+        let (answ_tx, answ_rx) = mpsc::channel();
+        let wait_counter = Arc::new(AtomicUsize::new(0));
+
         {
-            let tx = this.workers.get_or_spawn(this, 0);
+            let pool_clone = pool.clone();
+            let state = self.inner.clone();
+            let wait_counter = wait_counter.clone();
+            let thread = thread::current();
 
-            for v in this.graph.vertices() {
-                tx.send(Msg::Vertex(v, Parent::new(v, v, 0))).unwrap();
-            }
+            wait_counter.fetch_add(1, Ordering::SeqCst);
+            pool.lock().unwrap().spawn(|| spawner(state, 0, pool_clone, (wait_counter, thread), answ_tx));
         }
 
-        this.workers.pop(0);
+        answ_rx.iter().collect()
 
-        while this.wait_cnt.load(Ordering::SeqCst) != 0 {
-            thread::park();
-        }
-
-        this.parents.iter().map(|visited| visited.to_parent()).collect()
+        // while wait_counter.load(Ordering::SeqCst) != 0 {
+        //     thread::park();
+        // }
     }
 }
 
-struct Workers {
-    inner: Mutex<(VecDeque<Sender<Msg>>, usize)>,
-}
-
-impl Workers {
-    pub fn new() -> Self {
-        Workers {
-            inner: Mutex::new((VecDeque::new(), 0)),
-        }
-    }
-
-    pub fn spawn<G>(&self, state: &Arc<State<G>>, branch: usize) where
-        G: Graph + Send + Sync + 'static
-    {
-        let mut lock = self.inner.lock().unwrap();
-        let (ref mut vec, ref first) = *lock;
-        let index = branch - first;
-
-        for i in vec.len()..index+1 {
-            let branch = i + first;
-            let state_copy = state.clone();
-            let (tx, rx) = mpsc::channel();
-
-            state.pool.lock().unwrap().spawn(move || task_main(state_copy, rx, branch));
-
-            state.wait_cnt.fetch_add(1, Ordering::SeqCst);
-            vec.push_back(tx);
-        }
-    }
-
-    pub fn pop(&self, branch: usize) {
-        let mut lock = self.inner.lock().unwrap();
-        let (ref mut vec, ref mut first) = *lock;
-        assert!(branch == *first);
-
-        *first = *first + 1;
-        vec.pop_front();
-    }
-
-    pub fn get(&self, branch: usize) -> Option<Sender<Msg>> {
-        let lock = self.inner.lock().unwrap();
-        let (ref vec, ref first) = *lock;
-
-        let index = branch - first;
-        vec.get(index).cloned()
-    }
-
-    pub fn get_or_spawn<G>(&self, state: &Arc<State<G>>, branch: usize) -> Sender<Msg> where
-        G: Graph + Send + Sync + 'static
-    {
-        match self.get(branch) {
-            Some(sender) => sender,
-            None => {
-                self.spawn(state, branch);
-                self.get(branch).unwrap()
-            }
-        }
-    }
-}
-
-enum Msg {
-    Vertex(usize, Parent),
-}
-
-fn task_main<G>(state: Arc<State<G>>, receiver: Receiver<Msg>, branch: usize) where
-    G: Graph + Send + Sync + 'static
+fn spawner<G, T>(state: Arc<Inner<G>>, root: usize, pool: Arc<Mutex<Pool>>, wait: (Arc<AtomicUsize>, Thread), answ_tx: Sender<T>) where
+    G: Graph + Send + Sync + 'static,
+    T: Tree + Send + 'static,
 {
-    let mut stack: Option<(usize, Parent)>;
-    let mut cache = Cache::new(&state, branch);
-    let mut loop_cnt = 0;
+    let (ref wait_counter, ref thread) = wait;
 
-    for msg in receiver.iter() {
-        match msg {
-            Msg::Vertex(vert, parent) => {
-                stack = Some((vert, parent));
-            },
+    for next_root in root..state.owner.len() {
+        if state.owner[next_root].compare_and_swap(usize::MAX, next_root, Ordering::SeqCst) == usize::MAX {
+            let answ_tx = answ_tx.clone();
+            let pool_clone = pool.clone();
+            let state = state.clone();
+            let wait = wait.clone();
+
+            wait_counter.fetch_add(1, Ordering::SeqCst);
+            pool.lock().unwrap().spawn(move || spawner(state, next_root, pool_clone, wait, answ_tx));
+            break;
+        }
+    }
+
+    task_main(state, root, answ_tx);
+
+    if wait_counter.fetch_sub(1, Ordering::SeqCst) == 1 {
+        thread.unpark();
+    }
+}
+
+struct Owned<G: Graph + Send + Sync + 'static> {
+    root: usize,
+    data: Vec<bool>,
+    state: Arc<Inner<G>>,
+}
+
+impl<G: Graph + Send + Sync + 'static> Owned<G> {
+    pub fn new(state: &Arc<Inner<G>>, root: usize) -> Self {
+        Owned {
+            root: root,
+            data: vec![false; state.graph.num_vertices()],
+            state: state.clone(),
+        }
+    }
+
+    pub fn acquire(&mut self, vert: usize) -> bool {
+        if !self.data[vert] {
+            self.data[vert] =
+                self.state.owner[vert].compare_and_swap(usize::MAX, self.root, Ordering::SeqCst) == usize::MAX;
         }
 
-        while let Some((vert, parent)) = stack.take() {
-            loop_cnt += 1;
+        self.data[vert]
+    }
+}
 
-            if branch != parent.branch {
-                println!("{} {}", branch, parent.branch);
-            }
+fn task_main<G, T>(state: Arc<Inner<G>>, root: usize, answ_tx: Sender<T>) where
+    G: Graph + Send + Sync + 'static,
+    T: Tree,
+{
+    let mut loop_cnt = 0;
+    let mut stack = Vec::new();
+    let mut used = vec![false; state.graph.num_vertices()];
+    let mut owned = Owned::new(&state, root);
+    let mut result = T::new(root);
 
-            if !state.parents[vert].weak_less_than(&parent) {
-                let succeeded = state.parents[vert].store_if_greater(&parent);
+    used[root] = true;
 
-                if succeeded {
-                    for (i, nb) in state.graph.neighbours(vert).enumerate() {
-                        let candidate = Parent::new(parent.root, vert, parent.branch + i);
-                        let potentially_better = !state.parents[nb].weak_less_than(&candidate);
+    for v in state.graph.neighbours(root) {
+        if owned.acquire(v) {
+            stack.push((root, v));
+        }
+        else {
+            used[v] = true;
+        }
+    }
 
-                        if potentially_better {
-                            if i == 0 {
-                                stack = Some((nb, candidate));
-                            }
-                            else {
-                                cache.worker(candidate.branch).send(Msg::Vertex(nb, candidate)).unwrap();
-                            }
-                        }
+    while !stack.is_empty() {
+        loop_cnt += 1;
+        let (parent, vert) = stack.pop().unwrap();
+
+        if !used[vert] {
+            used[vert] = true;
+            result.add(vert, parent);
+
+            for child in state.graph.neighbours(vert) {
+                if !used[child] {
+                    if owned.acquire(child) {
+                        stack.push((vert, child));
+                    }
+                    else {
+                        used[child] = true;
                     }
                 }
             }
         }
     }
 
-    state.workers.pop(branch + 1);
-
-    let cnt = state.wait_cnt.fetch_sub(1, Ordering::SeqCst);
-    if cnt == 1 {
-        state.wait_thread.unpark();
-    }
-
-    LOOP_COUNTER.fetch_add(loop_cnt, Ordering::SeqCst);
+    answ_tx.send(result).unwrap();
+    BENCH_EDGE_COUNT.fetch_add(loop_cnt, Ordering::SeqCst);
 }
 
-struct Cache<G: Graph + Send + Sync + 'static> {
-    tx_cache: Vec<Sender<Msg>>,
-    first: usize,
-    state: Arc<State<G>>,
-}
-
-impl<G: Graph + Send + Sync + 'static> Cache<G> {
-    fn new(state: &Arc<State<G>>, first: usize) -> Self {
-        Cache {
-            tx_cache: Vec::new(),
-            first: first + 1,
-            state: state.clone(),
-        }
-    }
-
-    fn worker(&mut self, branch: usize) -> &Sender<Msg> {
-        for i in (self.tx_cache.len() + self.first)..(branch + 1) {
-            let tx = self.state.workers.get_or_spawn(&self.state, i);
-            self.tx_cache.push(tx);
-        }
-
-        if (branch - self.first) > 10000000 {
-            println!("index: {} ({} - {})", branch - self.first, branch, self.first);
-        }
-        &self.tx_cache[branch - self.first]
-    }
-}
-
-use std::sync::atomic::ATOMIC_USIZE_INIT;
-pub static LOOP_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
+pub static BENCH_EDGE_COUNT: AtomicUsize = ATOMIC_USIZE_INIT;
