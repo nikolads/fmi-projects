@@ -77,7 +77,9 @@ fn main() {
             println!("{:?}", vec);
         }
 
-        println!("loop count: {}", dfs::threaded::BENCH_EDGE_COUNT.load(::std::sync::atomic::Ordering::SeqCst));
+        println!("trees: {}", vec.len());
+        println!("edges visited: {}", dfs::threaded::BENCH_EDGE_COUNT.load(::std::sync::atomic::Ordering::SeqCst));
+        println!("tasks: {}", dfs::threaded::BENCH_TASK_COUNT.load(::std::sync::atomic::Ordering::SeqCst));
         println!("generate: {}", format_dur(&ts_generate.duration_since(ts_begin)));
         println!("dfs: {}", format_dur(&ts_dfs.duration_since(ts_generate)));
     }

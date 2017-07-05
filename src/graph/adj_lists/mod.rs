@@ -50,7 +50,7 @@ impl Graph for AdjLists {
     }
 
     fn neighbours<'a>(&'a self, vert: usize) -> Box<Iterator<Item=usize> + 'a> {
-        Box::new(self.lists[vert].iter().cloned())
+        Box::new(self.lists[vert].iter().rev().cloned())
     }
 }
 

@@ -1,3 +1,7 @@
+extern crate bit_vec;
+
+use self::bit_vec::BitVec;
+
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 use std::sync::mpsc::{self, Sender};
@@ -92,14 +96,14 @@ fn spawner<G, T>(state: Arc<Inner<G>>, root: usize, pool: Arc<Mutex<Pool>>, answ
 
 struct Owned<G: Graph + Send + Sync + 'static> {
     root: usize,
-    data: Vec<bool>,
+    data: BitVec,
     state: Arc<Inner<G>>,
 }
 
 impl<G: Graph + Send + Sync + 'static> Owned<G> {
     pub fn new(state: &Arc<Inner<G>>, root: usize) -> Self {
-        let mut data = vec![false; state.graph.num_vertices()];
-        data[root] = true;
+        let mut data = BitVec::from_elem(state.graph.num_vertices(), false);
+        data.set(root, true);
 
         Owned {
             root: root,
@@ -110,7 +114,7 @@ impl<G: Graph + Send + Sync + 'static> Owned<G> {
 
     pub fn check(&mut self, vert: usize) -> bool {
         if !self.data[vert] {
-            self.data[vert] = acquire(&self.state.owner[vert], self.root);
+            self.data.set(vert, acquire(&self.state.owner[vert], self.root));
         }
 
         self.data[vert]
@@ -118,19 +122,23 @@ impl<G: Graph + Send + Sync + 'static> Owned<G> {
 }
 
 fn acquire(owner: &AtomicUsize, root: usize) -> bool {
-    let mut prev = owner.load(Ordering::SeqCst);
+    owner.compare_and_swap(usize::MAX, root, Ordering::SeqCst) == usize::MAX
 
-    while prev > root {
-        let found = owner.compare_and_swap(prev, root, Ordering::SeqCst);
-        if found == prev {
-            return true;
-        }
+    // Code like the following can be used to achieve the same result as the
+    // single-threaded variant, but it destroys the perfomance
 
-        prev = found;
-        // backoff ?
-    }
+    // let mut prev = usize::MAX;
 
-    false
+    // while prev > root {
+    //     let found = owner.compare_and_swap(prev, root, Ordering::SeqCst);
+    //     if found == prev {
+    //         return true;
+    //     }
+
+    //     prev = found;
+    // }
+
+    // false
 }
 
 fn task_main<G, T>(state: Arc<Inner<G>>, root: usize, answ_tx: Sender<T>) where
@@ -139,18 +147,18 @@ fn task_main<G, T>(state: Arc<Inner<G>>, root: usize, answ_tx: Sender<T>) where
 {
     let mut loop_cnt = 0;
     let mut stack = Vec::new();
-    let mut used = vec![false; state.graph.num_vertices()];
+    let mut used = BitVec::from_elem(state.graph.num_vertices(), false);
     let mut owned = Owned::new(&state, root);
     let mut result = T::new(root);
 
-    used[root] = true;
+    used.set(root, true);
 
     for v in state.graph.neighbours(root) {
         if owned.check(v) {
             stack.push((root, v));
         }
         else {
-            used[v] = true;
+            used.set(v, true);
         }
     }
 
@@ -159,7 +167,7 @@ fn task_main<G, T>(state: Arc<Inner<G>>, root: usize, answ_tx: Sender<T>) where
         let (parent, vert) = stack.pop().unwrap();
 
         if !used[vert] {
-            used[vert] = true;
+            used.set(vert, true);
             result.add(vert, parent);
 
             for child in state.graph.neighbours(vert) {
@@ -168,7 +176,7 @@ fn task_main<G, T>(state: Arc<Inner<G>>, root: usize, answ_tx: Sender<T>) where
                         stack.push((vert, child));
                     }
                     else {
-                        used[child] = true;
+                        used.set(child, true);
                     }
                 }
             }
@@ -177,6 +185,8 @@ fn task_main<G, T>(state: Arc<Inner<G>>, root: usize, answ_tx: Sender<T>) where
 
     answ_tx.send(result).unwrap();
     BENCH_EDGE_COUNT.fetch_add(loop_cnt, Ordering::SeqCst);
+    BENCH_TASK_COUNT.fetch_add(1, Ordering::SeqCst);
 }
 
 pub static BENCH_EDGE_COUNT: AtomicUsize = ATOMIC_USIZE_INIT;
+pub static BENCH_TASK_COUNT: AtomicUsize = ATOMIC_USIZE_INIT;
