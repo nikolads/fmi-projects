@@ -10,6 +10,8 @@
 #include <mutex>
 #include <thread>
 
+#define USE_COLOR 0
+
 class SimulAnnealing {
 public:
     SimulAnnealing(const sir::SimulResult& _target, double _sim_time);

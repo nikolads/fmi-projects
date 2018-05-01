@@ -1,5 +1,11 @@
 #include "simul_annealing.h"
 
+#if USE_COLOR
+    #define COLOR_BCYAN(x) {"\x1b[36;1m" x "\x1b[0m"}
+#else
+    #define COLOR_BCYAN(x) {x}
+#endif
+
 double float_rand() {
     return double(rand()) / double(RAND_MAX);
 }
@@ -12,15 +18,13 @@ struct OptimalSol {
 
 class Simulation {
 public:
-    Simulation(const sir::SimulResult& _target, double _sim_time, double init_temp, double _cooling_rate, OptimalSol& opt);
-
     void start(double init_beta, double init_alpha, double step_beta, double step_alpha);
 
 private:
     double cost(double beta, double alpha) const;
     double acceptance(double new_cost) const;
 
-private:
+public:
     const sir::SimulResult& target;
     double sim_time;
 
@@ -35,16 +39,9 @@ private:
     double optimal_cost;
 
     OptimalSol& global_optimal;
-};
 
-Simulation::Simulation(const sir::SimulResult& _target, double _sim_time, double _init_temp, double _cooling_rate, OptimalSol& opt):
-    target(_target),
-    sim_time(_sim_time),
-    init_temp(_init_temp),
-    cooling_rate(_cooling_rate),
-    global_optimal(opt)
-{
-}
+    int thread_no;
+};
 
 void Simulation::start(double init_beta, double init_alpha, double step_beta, double step_alpha) {
     this->curr = std::make_pair(init_beta, init_alpha);
@@ -82,16 +79,15 @@ void Simulation::start(double init_beta, double init_alpha, double step_beta, do
             this->global_optimal.sol = this->optimal;
             this->global_optimal.cost = this->optimal_cost;
 
-            printf("optimal: (%.15lf, %.15lf), cost=%lf\n", optimal.first, optimal.second, optimal_cost);
+            printf(COLOR_BCYAN("[%d] optimal: (%.15lf, %.15lf), cost=%lf\n"), this->thread_no,
+                optimal.first, optimal.second, optimal_cost);
         }
         this->global_optimal.mtx.unlock();
 
-        double return_chance = std::max(0.9 - exp((this->global_optimal.cost - this->curr_cost) / this->global_optimal.cost), 0.0);
-        if (return_chance > 0.0) {
-            printf("[%lx] (%.15lf, %.15lf), cost=%lf, deviation=%lf, return_chance=%lf\n", long(std::this_thread::get_id),
-                this->curr.first, this->curr.second, this->curr_cost,
-                (this->curr_cost - this->global_optimal.cost) / this->global_optimal.cost, return_chance);
-        }
+
+        printf("[%d] (%.10lf, %.10lf), cost=%lf, difference=%lf\n", this->thread_no,
+            this->curr.first, this->curr.second, this->curr_cost,
+            (this->curr_cost - this->global_optimal.cost) / this->global_optimal.cost);
     }
 }
 
@@ -108,7 +104,7 @@ double Simulation::acceptance(double new_cost) const {
 
 SimulAnnealing::SimulAnnealing(const sir::SimulResult& _target, double _sim_time):
     nthreads(4),
-    init_temp(500),
+    init_temp(1000),
     cooling_rate(1),
     target(_target),
     sim_time(_sim_time)
@@ -122,7 +118,15 @@ void SimulAnnealing::start(double init_beta, double init_alpha, double step_beta
     std::vector<std::thread> threads;
 
     for (int i = 0; i < this->nthreads; i++) {
-        Simulation simul = Simulation(this->target, this->sim_time, this->init_temp, this->cooling_rate, opt);
+        Simulation simul = {
+            .target = this->target,
+            .sim_time = this->sim_time,
+            .init_temp = this->init_temp,
+            .cooling_rate = this->cooling_rate,
+            .global_optimal = opt,
+            .thread_no = i,
+        };
+
         threads.push_back(std::thread(&Simulation::start, std::move(simul), init_beta, init_alpha, step_beta, step_alpha));
     }
 

@@ -7,50 +7,53 @@ jQuery(function(){
         labels: [],
         datasets: [{
             scaleFontColor: '#fff',
-            label: '# susceptible (target)',
+            label: 'S (target)',
             lineTension: 0,
             backgroundColor: "rgba(99, 210, 151, 0.3)",
             // borderColor: "#63D297",
-            borderColor: "#fff",
+            borderColor: "#333",
             pointBackgroundColor: "#238257",
             fill: false,
             data: [],
         },
         {
-            label: '# infected (target)',
+            label: 'I (target)',
             lineTension: 0,
             backgroundColor: "rgba(244,67,54,0.5)",
             // borderColor: "#F44336",
-            borderColor: "#fff",
+            borderColor: "#333",
             pointBackgroundColor: "#B40316",
             fill: false,
             data: [],
         },
         {
             scaleFontColor: '#fff',
-            label: '# susceptible',
+            label: 'S',
             lineTension: 0,
             backgroundColor: "rgba(99, 210, 151, 0.3)",
             borderColor: "#63D297",
             pointBackgroundColor: "#63D297",
+            // fill: false,
             data: [],
         },
         {
-            label: '# infected',
+            label: 'I',
             lineTension: 0,
             backgroundColor: "rgba(244,67,54,0.5)",
             borderColor: "#F44336",
             pointBackgroundColor: "#F44336",
+            // fill: false,
             data: [],
         },
-        {
-            label: '# recoverd',
+        /*{
+            label: 'R',
             lineTension: 0,
             backgroundColor: "rgba(255,193,7,0.5)",
             borderColor: "#FFC107",
             pointBackgroundColor: "#FFC107",
+            fill: false,
             data: [],
-        }],
+        }*/],
     };
 
     myLineChart = new Chart($('#sir_graphic'), {
@@ -66,13 +69,13 @@ jQuery(function(){
     });
 
 
-    Chart.defaults.global.defaultFontColor = "#fff";
+    Chart.defaults.global.defaultFontColor = "#000";
 
     sir_result.forEach(function(item) {
         myLineChart.data.labels.push(item.time);
         myLineChart.data.datasets[2].data.push(item.s);
         myLineChart.data.datasets[3].data.push(item.i);
-        myLineChart.data.datasets[4].data.push(item.r);
+        // myLineChart.data.datasets[4].data.push(item.r);
     });
 
     target_result.forEach(function(item) {
