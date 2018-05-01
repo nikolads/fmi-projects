@@ -1,0 +1,37 @@
+\section{Реализация}
+
+\paragraph*{} За реализация на проекта е използван езикът Rust. Използвани са следните външни библиотеки:
+\begin{itemize}
+\item \verb|bit-vec| - bitmap структура от данни
+\item \verb|clap| - обработка на command line аргументи
+\item \verb|crossbeam| - lock-free структури от данни
+\item \verb|rand| - генератори на случайни числа
+\end{itemize}
+
+Програмата поддържа следните command line аргументи:
+\begin{verbatim}
+USAGE:
+    paralel-dfs [OPTIONS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -t, --threads <N>     Number of threads to use
+    -i, --input <FILE>    File to read graph data from
+    -n, --vertices <N>    Generate a graph with N vertices
+    -m, --edges <N>       Generate a graph with N edges
+\end{verbatim}
+
+\subsection*{Thread pool}
+
+\paragraph*{} За разпределяне на работата по множество нишки се използва ръчна имплементация на thread pool. Имплементацията поддържа само най-базовите функции като създаване на n нишки и добавяне на задачи за изпълнение в опашка. За опашката се използва готова имплементация на work-stealing queue от \verb|crossbeam|.
+
+\paragraph*{} Thread pool-а не поддържа връщане на резултат от изпълнението на задачата. За тази цел се използват канали (chanels, multi-producer single-consumer lock-free message queues) от стандартната библиотека на Rust. Те позволяват еднопосочна комуникация между нишки.
+
+\subsection*{Генериране на графа}
+
+\paragraph*{} Поддържат се различни структури от данни за представяне на графа. Поддържат се списъци на наследство (Adjacency Lists), които позволяват генериране на ориентиран граф. Не може да се генерира неориентиран, защото за това ще се наложи значителна синхронизация между нишките. Имаше идея да се добави матрица на съседство (Adjacency Matrix), която да поддържа генериране и на ориентиран и на неориентиран граф, но това не е имплементирано. Всички представяния имплементират общ интерфейс \verb|Graph|.
+
+\paragraph*{} При генерирането на графа се използват генератори за случайни числа от библиотеката \verb|rand|. За да се подобри скоростта за всяка нишка се създава отделен генератор.
