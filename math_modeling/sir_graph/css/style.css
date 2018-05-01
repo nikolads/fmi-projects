@@ -1,0 +1,35 @@
+html, body {
+  background-color: #202729;
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none;   /* Chrome/Safari/Opera */
+  -khtml-user-select: none;    /* Konqueror */
+  -moz-user-select: none;      /* Firefox */
+  -ms-user-select: none;       /* Internet Explorer/Edge */
+  user-select: none;
+}
+
+#sir_graph {
+
+}
+
+body {
+  position: relative;
+}
+
+.graph_info {
+  position: relative;
+  display: table;
+  width: 100%;
+}
+
+#chart, #tree {
+  width: 50vw;
+  position: relative;
+  display: table-cell;
+  vertical-align: middle;
+}
+
+#sir_graph_tree {
+  position: relative;
+  display: inline-block;
+}
