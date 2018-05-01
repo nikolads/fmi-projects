@@ -32,8 +32,7 @@ impl Graph {
     }
 
     pub fn edges(&self) -> EdgesIter {
-        fn helper(params: (usize, &Vec<usize>)) -> Zip<Iter<usize>, Repeat<usize>> {
-            let (v, list) = params;
+        fn helper((v, list): (usize, &Vec<usize>)) -> Zip<Iter<usize>, Repeat<usize>> {
             list.iter().zip(iter::repeat(v))
         }
 
@@ -41,4 +40,7 @@ impl Graph {
     }
 }
 
-pub type EdgesIter<'a> = FlatMap<Enumerate<Iter<'a, Vec<usize>>>, Zip<Iter<'a, usize>, Repeat<usize>>, fn((usize, &'a Vec<usize>)) -> Zip<Iter<'a, usize>, Repeat<usize>>>;
+pub type EdgesIter<'a> = FlatMap<
+    Enumerate<Iter<'a, Vec<usize>>>,
+    Zip<Iter<'a, usize>, Repeat<usize>>,
+    fn((usize, &'a Vec<usize>)) -> Zip<Iter<'a, usize>, Repeat<usize>>>;

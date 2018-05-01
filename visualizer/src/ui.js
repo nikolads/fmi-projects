@@ -10,4 +10,13 @@ module.exports.init = function(graph, ws) {
             type: 'addEdge'
         }));
     });
+
+    document.getElementById('task').addEventListener('click', function(evt) {
+        console.log(graph.edges());
+
+        ws.send(JSON.stringify({
+            type: 'task',
+            id: 0,
+        }));
+    });
 }

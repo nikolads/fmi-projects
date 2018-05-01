@@ -104,6 +104,10 @@ impl<T> Server<T> where
                 else if json["type"] == "addEdge" {
                     sender.send(InMessage::AddEdge).unwrap();
                 }
+                else if json["type"] == "task" {
+                    let id = json["id"].as_usize().unwrap();
+                    sender.send(InMessage::Task(id)).unwrap();
+                }
             }
         }
     }

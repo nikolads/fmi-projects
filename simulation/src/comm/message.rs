@@ -12,6 +12,7 @@ pub enum OutMessage<T> where
     State(State),
     Data(T, f32),
     Graph(Range<usize>, Vec<(usize, usize)>),
+    TaskResult(usize, usize),
 }
 
 impl<T> OutMessage<T> where
@@ -42,6 +43,13 @@ impl<T> OutMessage<T> where
                     "vertices" => vertices.clone().into_iter().collect::<Vec<_>>(),
                     "edges" => edges.iter().map(|&(u, v)| array![u, v]).collect::<Vec<_>>()
                 }
+            },
+            OutMessage::TaskResult(id, res) => {
+                object! {
+                    "type" => "taskResult",
+                    "id" => id,
+                    "res" => res
+                }
             }
         }
     }
@@ -52,6 +60,7 @@ pub enum InMessage {
     New,
     AddVertex,
     AddEdge,
+    Task(usize)
 }
 
 impl State {

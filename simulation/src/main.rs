@@ -19,17 +19,19 @@ fn main() {
 
     let mut force_directed = ForceDirected::new();
 
-    force_directed.graph_mut().add_vertex();
-    force_directed.graph_mut().add_vertex();
-    force_directed.graph_mut().add_vertex();
-    force_directed.graph_mut().add_vertex();
-    force_directed.graph_mut().add_edge(0, 1);
-    force_directed.graph_mut().add_edge(1, 2);
-    force_directed.graph_mut().add_edge(0, 3);
+    // force_directed.graph_mut().add_vertex();
+    // force_directed.graph_mut().add_vertex();
+    // force_directed.graph_mut().add_vertex();
+    // force_directed.graph_mut().add_vertex();
+    // force_directed.graph_mut().add_edge(0, 1);
+    // force_directed.graph_mut().add_edge(1, 2);
+    // force_directed.graph_mut().add_edge(0, 3);
 
-    force_directed.param.repulsion_mult = 0.3;
+    force_directed.param.repulsion_mult = 0.5;
     force_directed.param.spring_mult = 0.1;
     force_directed.param.spring_len = 2.0;
+
+    let mut counter = 0_usize;
 
     loop {
         for msg in msg_queue.try_iter() {
@@ -57,6 +59,10 @@ fn main() {
                             force_directed.graph().edges().map(|(&u, v)| (u, v)).filter(|&(u, v)| u < v).collect()));
                     }
                 },
+                InMessage::Task(id) => {
+                    counter += 1;
+                    server.msg_queue().send(OutMessage::TaskResult(id, counter));
+                }
             }
         }
 

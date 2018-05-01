@@ -6,15 +6,21 @@ module.exports.init = function(graph) {
     let width = svg.attr('width');
     let height = svg.attr('height');
 
-    let gEdge = svg.append('g');
-    let gVert = svg.append('g');
+    let container = svg.append('g');
+
+    container.call(d3.zoom()
+        .scaleExtent([0.5, 100])
+        .on('zoom', () => container.attr("transform", d3.event.transform)));
+
+    let gEdge = container.append('g');
+    let gVert = container.append('g');
 
     let x = d3.scaleLinear()
-        .domain([-30, 30])
+        .domain([-10, 10])
         .range([0, width])
 
     let y = d3.scaleLinear()
-        .domain([-30, 30])
+        .domain([-10, 10])
         .range([0, height])
 
     graph.on('add_vertices', function() {
